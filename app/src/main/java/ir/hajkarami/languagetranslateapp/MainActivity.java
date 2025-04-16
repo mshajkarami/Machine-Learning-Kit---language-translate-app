@@ -7,17 +7,22 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.DiffUtil;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.mlkit.common.model.DownloadConditions;
 import com.google.mlkit.nl.translate.TranslateLanguage;
+import com.google.mlkit.nl.translate.Translation;
+import com.google.mlkit.nl.translate.Translator;
+import com.google.mlkit.nl.translate.TranslatorOptions;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,17 +49,80 @@ public class MainActivity extends AppCompatActivity {
         micIV = findViewById(R.id.idIVMic);
         translateBtn = findViewById(R.id.idBtnTranslate);
         translatedTV = findViewById(R.id.idTvTranslatedTV);
-
+        // Spinner 1
         fromSpinner.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 fromLanguageCode = getLanguageCode(fromLanguages[position]);
             }
         });
-
         ArrayAdapter fromAdapter = new ArrayAdapter(this, R.layout.spinner_item, fromLanguages);
         fromAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         fromSpinner.setAdapter(fromAdapter);
+        // Spinner 2
+        toSpinner.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                toLanguageCode = getLanguageCode(toLanguages[position]);
+            }
+        });
+        ArrayAdapter toAdapter = new ArrayAdapter(this, R.layout.spinner_item, toLanguages);
+        toAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        toSpinner.setAdapter(toAdapter);
+        translateBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                translatedTV.setText("");
+                if (sourceEdt.getText().toString().isEmpty())
+                    Toast.makeText(MainActivity.this, "Please enter your text", Toast.LENGTH_SHORT).show();
+                else if (fromLanguageCode.isEmpty())
+                    Toast.makeText(MainActivity.this, "Please select source language", Toast.LENGTH_SHORT).show();
+                else if (toLanguageCode.isEmpty())
+                    Toast.makeText(MainActivity.this, "Please select target language", Toast.LENGTH_SHORT).show();
+                else {
+                    String source = TranslateText(fromLanguageCode, toLanguageCode, sourceEdt.getText().toString());
+                    sourceEdt.setText(source);
+                }
+            }
+        });
+    }
+
+    private String TranslateText(String fromLanguageCode, String toLanguageCode, String src) {
+        translatedTV.setText("Downloading Language Model");
+        try {
+            TranslatorOptions options = new TranslatorOptions.Builder()
+                    .setSourceLanguage(fromLanguageCode)
+                    .setTargetLanguage(toLanguageCode).build();
+            Translator translator = Translation.getClient(options);
+
+            DownloadConditions conditions = new DownloadConditions.Builder().build();
+            translator.downloadModelIfNeeded(conditions).addOnSuccessListener(new OnSuccessListener<Void>() {
+                @Override
+                public void onSuccess(Void unused) {
+                    translatedTV.setText("Translating...");
+                    translator.translate(src).addOnSuccessListener(new OnSuccessListener<String>() {
+                        @Override
+                        public void onSuccess(String s) {
+                            translatedTV.setText(s);
+                        }
+                    }).addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Toast.makeText(MainActivity.this,"Fail to translate",Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Toast.makeText(MainActivity.this,"Fail to download the language",Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private String getLanguageCode(String language) {
