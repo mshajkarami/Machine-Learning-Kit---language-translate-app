@@ -50,22 +50,30 @@ public class MainActivity extends AppCompatActivity {
         translateBtn = findViewById(R.id.idBtnTranslate);
         translatedTV = findViewById(R.id.idTvTranslatedTV);
         // Spinner 1
-        fromSpinner.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        fromSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 fromLanguageCode = getLanguageCode(fromLanguages[position]);
             }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
         });
+
         ArrayAdapter fromAdapter = new ArrayAdapter(this, R.layout.spinner_item, fromLanguages);
         fromAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         fromSpinner.setAdapter(fromAdapter);
         // Spinner 2
-        toSpinner.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        toSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 toLanguageCode = getLanguageCode(toLanguages[position]);
             }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
         });
+
         ArrayAdapter toAdapter = new ArrayAdapter(this, R.layout.spinner_item, toLanguages);
         toAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         toSpinner.setAdapter(toAdapter);
@@ -79,15 +87,13 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "Please select source language", Toast.LENGTH_SHORT).show();
                 else if (toLanguageCode.isEmpty())
                     Toast.makeText(MainActivity.this, "Please select target language", Toast.LENGTH_SHORT).show();
-                else {
-                    String source = TranslateText(fromLanguageCode, toLanguageCode, sourceEdt.getText().toString());
-                    sourceEdt.setText(source);
-                }
+                else
+                    TranslateText(fromLanguageCode, toLanguageCode, sourceEdt.getText().toString());
             }
         });
     }
 
-    private String TranslateText(String fromLanguageCode, String toLanguageCode, String src) {
+    private void TranslateText(String fromLanguageCode, String toLanguageCode, String src) {
         translatedTV.setText("Downloading Language Model");
         try {
             TranslatorOptions options = new TranslatorOptions.Builder()
@@ -122,7 +128,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
     }
 
     private String getLanguageCode(String language) {
@@ -159,7 +164,9 @@ public class MainActivity extends AppCompatActivity {
                 LanguageCode = TranslateLanguage.URDU;
                 break;
             default:
+                Toast.makeText(this, "Invalid language selected", Toast.LENGTH_SHORT).show();
                 LanguageCode = "";
+                break;
         }
         return LanguageCode;
     }
